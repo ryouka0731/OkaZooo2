@@ -14,9 +14,10 @@ interface VideoData {
 
 interface VideoSwiperProps {
   videos: VideoData[];
+  onSlideChange?: (idx: number) => void;
 }
 
-export default function VideoSwiper({ videos }: VideoSwiperProps) {
+export default function VideoSwiper({ videos, onSlideChange }: VideoSwiperProps) {
   // SwiperのactiveIndex管理
   const swiperRef = useRef<any>(null);
 
@@ -50,9 +51,8 @@ export default function VideoSwiper({ videos }: VideoSwiperProps) {
       virtual
       slidesPerView={1}
       onSwiper={swiper => (swiperRef.current = { swiper })}
-      onSlideChange={() => {
+      onSlideChange={(swiper) => {
         // スワイプ時プリロード
-        const swiper = swiperRef.current.swiper;
         const preloadIndex = swiper.activeIndex + 1;
         const nextVideo = videos[preloadIndex];
         if (nextVideo) {
@@ -62,8 +62,8 @@ export default function VideoSwiper({ videos }: VideoSwiperProps) {
           link.href = nextVideo.url;
           document.head.appendChild(link);
         }
+        if (onSlideChange) onSlideChange(swiper.activeIndex);
       }}
-      virtual
       style={{ width: "480px" }}
     >
       {videos.map((video, idx) => (
