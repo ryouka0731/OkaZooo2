@@ -21,7 +21,6 @@ const sampleVideos = [
     thumbnail_url: "https://via.placeholder.com/160x90.png?text=Thumb+1",
     affiliate_url: "https://www.dmm.co.jp/affiliate1",
     hunted_at: "2024-01-01T12:00:00+09:00"
-    ,url: "https://www.w3schools.com/html/mov_bbb.mp4"
   },
   {
     id: "2",
@@ -31,8 +30,7 @@ const sampleVideos = [
     poster_url: "https://via.placeholder.com/320x180.png?text=Poster+2",
     thumbnail_url: "https://via.placeholder.com/160x90.png?text=Thumb+2",
     affiliate_url: "https://www.dmm.co.jp/affiliate2",
-    hunted_at: "2024-01-02T12:00:00+09:00",
-    url: "https://www.w3schools.com/html/movie.mp4"
+    hunted_at: "2024-01-02T12:00:00+09:00"
   }
 ];
 

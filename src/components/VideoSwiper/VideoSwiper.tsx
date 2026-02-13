@@ -15,7 +15,6 @@ interface VideoData {
   thumbnail_url: string;
   affiliate_url: string;
   hunted_at: string;
-  url: string; // 既存互換
 }
 
 interface VideoSwiperProps {
@@ -32,11 +31,7 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
   if (!Array.isArray(videos)) {
     console.warn('videos propsが配列ではありません:', videos);
   } else {
-    videos.forEach((v, i) => {
-      if (typeof v.url !== 'string') {
-        console.warn(`動画${i}のurl型不一致:`, v);
-      }
-    });
+    // dmm_contentsスキーマ準拠: video_urlのみ利用
   }
   if (!show) return null;
   // SwiperのactiveIndex管理
@@ -50,7 +45,7 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
     const nextVideo = videos[preloadIndex];
     if (nextVideo) {
       const video = document.createElement("video");
-      video.src = nextVideo.url;
+      video.src = nextVideo.video_url;
       video.preload = "auto";
       video.style.display = "none";
       document.body.appendChild(video);
@@ -80,7 +75,7 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
           const link = document.createElement("link");
           link.rel = "preload";
           link.as = "video";
-          link.href = nextVideo.url;
+          link.href = nextVideo.video_url;
           document.head.appendChild(link);
         }
         if (onSlideChange) onSlideChange(swiper.activeIndex);
@@ -89,7 +84,7 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
       style={{ width: '100%', height: '100%', overflow: 'hidden', display: 'block' }}
     >
       {videos.map((video, idx) => {
-        console.log('[VideoSwiper.map] idx:', idx, 'key:', video.id, 'url:', video.url);
+        console.log('[VideoSwiper.map] idx:', idx, 'key:', video.id, 'video_url:', video.video_url);
         return (
           <SwiperSlide key={video.id} virtualIndex={idx}>
             <VideoSlide video={video} index={idx} />
@@ -101,25 +96,25 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
 }
 
 function VideoSlide({ video, index }: { video: VideoData; index: number }) {
-  const { videoRef, handleLoadedMetadata, handleTap } = useVideoControl({ videoUrl: video.url });
+  const { videoRef, handleLoadedMetadata, handleTap } = useVideoControl({ videoUrl: video.video_url });
 
   // URL検証関数
   // video_urlはSupabaseから正しい形式で渡される前提
   function isValidVideoUrl(url: any): boolean {
-    return typeof url === 'string' && url.startsWith('http');
+    return typeof url === 'string' && url.startsWith('http'); // dmm_contentsスキーマ video_url
   }
 
   // 自動再生抑止: 初回タップ時のみplay()を呼ぶため、useEffectでのplay()呼び出しを削除
   useEffect(() => {
     console.log('VideoSlide video:', video);
-    if (!isValidVideoUrl(video.url)) {
-      console.warn(`動画${index}のURLが不正です`, video);
+    if (!isValidVideoUrl(video.video_url)) {
+      console.warn(`動画${index}のvideo_urlが不正です`, video);
     }
-    if (videoRef.current && isValidVideoUrl(video.url)) {
+    if (videoRef.current && isValidVideoUrl(video.video_url)) {
       videoRef.current.currentTime = 40;
       // videoRef.current.play(); // 自動再生抑止のため削除
     }
-  }, [video.url]);
+  }, [video.video_url]);
 
   return (
     <div
@@ -139,6 +134,7 @@ function VideoSlide({ video, index }: { video: VideoData; index: number }) {
       {video.video_url.endsWith('.mp4') ? (
         <video
           src={video.video_url}
+          crossOrigin="anonymous"
           controls
           autoPlay
           muted
