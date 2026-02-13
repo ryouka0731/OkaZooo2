@@ -3,21 +3,37 @@ import OkaZoooLogo from './components/OkaZoooLogo/OkaZoooLogo'
 import Main from './components/Main/Main'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TutorialPopup from './components/TutorialPopup/TutorialPopup';
 import VideoSwiper from './components/VideoSwiper/VideoSwiper';
+import { getAllVideos } from './lib/supabase';
 
 function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [videoIndex, setVideoIndex] = useState(0);
 
-  // 仮の動画データ
-  const videos = [
-    { id: '1', title: '動画1', url: 'video1.mp4' },
-    { id: '2', title: '動画2', url: 'video2.mp4' },
-    { id: '3', title: '動画3', url: 'video3.mp4' },
-    { id: '4', title: '動画4', url: 'video4.mp4' },
-  ];
+  const [videos, setVideos] = useState<{id: string; title: string; url: string;}[]>([]);
+  
+  useEffect(() => {
+    getAllVideos()
+      .then((result) => {
+        console.log('Supabaseレスポンス:', result);
+        if (Array.isArray(result)) {
+          setVideos(result);
+        } else {
+          setVideos(result.data);
+          if (result.error) {
+            alert('動画データ取得に失敗しました: ' + result.error);
+            console.error('動画データ取得エラー:', result.error);
+          }
+        }
+      })
+      .catch((err) => {
+        console.log('Supabaseレスポンス取得catch:', err);
+        alert('動画データ取得時にエラーが発生しました: ' + err);
+        console.error('動画データ取得例外:', err);
+      });
+  }, []);
 
   // 3枚目視聴後ポップアップ表示
   const handleSlideChange = (idx: number) => {
