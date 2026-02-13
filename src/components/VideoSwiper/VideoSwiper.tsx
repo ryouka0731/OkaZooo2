@@ -36,6 +36,8 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
   if (!show) return null;
   // SwiperのactiveIndex管理
   const swiperRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isPc = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   // プリロード用
   useEffect(() => {
@@ -61,37 +63,69 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
     };
   }, [videos]);
 
-  return (
-    <Swiper
-      modules={[Virtual]}
-      virtual
-      slidesPerView={slidesPerView}
-      onSwiper={swiper => (swiperRef.current = { swiper })}
-      onSlideChange={(swiper) => {
-        // スワイプ時プリロード
-        const preloadIndex = swiper.activeIndex + 1;
-        const nextVideo = videos[preloadIndex];
-        if (nextVideo) {
-          const link = document.createElement("link");
-          link.rel = "preload";
-          link.as = "video";
-          link.href = nextVideo.video_url;
-          document.head.appendChild(link);
+  // PC時は全画面化＋マウスホイール切り替え
+  useEffect(() => {
+    if (!isPc || !swiperRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const swiper = swiperRef.current.swiper;
+    const handleWheel = (e: WheelEvent) => {
+      if (!swiper) return;
+      if (e.deltaY > 0) {
+        // 次へ（端でループしない）
+        if (swiper.activeIndex < videos.length - 1) {
+          swiper.slideTo(swiper.activeIndex + 1);
         }
-        if (onSlideChange) onSlideChange(swiper.activeIndex);
-      }}
-      className={`w-full max-w-lg md:max-w-xl lg:max-w-2xl mx-auto video-swiper-wrapper ${className}`}
-      style={{ width: '100%', height: '100%', overflow: 'hidden', display: 'block' }}
+      } else if (e.deltaY < 0) {
+        // 前へ（端でループしない）
+        if (swiper.activeIndex > 0) {
+          swiper.slideTo(swiper.activeIndex - 1);
+        }
+      }
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [isPc, videos.length]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={isPc ? `fixed inset-0 z-50 bg-black flex items-center justify-center video-swiper-pc ${className}` : `w-full max-w-lg md:max-w-xl lg:max-w-2xl mx-auto video-swiper-wrapper ${className}`}
+      style={isPc ? { width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex' } : { width: '100%', height: '100%', overflow: 'hidden', display: 'block' }}
     >
-      {videos.map((video, idx) => {
-        console.log('[VideoSwiper.map] idx:', idx, 'key:', video.id, 'video_url:', video.video_url);
-        return (
-          <SwiperSlide key={video.id} virtualIndex={idx}>
-            <VideoSlide video={video} index={idx} />
-          </SwiperSlide>
-        );
-      })}
-    </Swiper>
+      <Swiper
+        modules={[Virtual]}
+        virtual
+        slidesPerView={slidesPerView}
+        onSwiper={swiper => (swiperRef.current = { swiper })}
+        onSlideChange={(swiper) => {
+          // スワイプ時プリロード
+          const preloadIndex = swiper.activeIndex + 1;
+          const nextVideo = videos[preloadIndex];
+          if (nextVideo) {
+            const link = document.createElement("link");
+            link.rel = "preload";
+            link.as = "video";
+            link.href = nextVideo.video_url;
+            document.head.appendChild(link);
+          }
+          if (onSlideChange) onSlideChange(swiper.activeIndex);
+        }}
+        className={isPc ? 'w-full h-full video-swiper-inner' : 'w-full h-full'}
+        style={isPc ? { width: '100vw', height: '100vh' } : { width: '100%', height: '100%' }}
+      >
+        {videos.map((video, idx) => {
+          console.log('[VideoSwiper.map] idx:', idx, 'key:', video.id, 'video_url:', video.video_url);
+          return (
+            <SwiperSlide key={video.id} virtualIndex={idx}>
+              <VideoSlide video={video} index={idx} />
+            </SwiperSlide>
+          );
+        })}
+      </Swiper>
+    </div>
   );
 }
 
