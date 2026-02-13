@@ -10,7 +10,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function getAllVideos() {
   try {
-    const { data, error } = await supabase.from("videos").select("*");
+    // dmm_contents テーブルに変更
+    const { data, error } = await supabase.from("dmm_contents").select("*");
     // video_url値を全件console.log出力
     if (data) {
       data.forEach((v, i) => console.log(`[Supabase取得] 動画${i} video_url:`, v.video_url));
@@ -25,8 +26,17 @@ export async function getAllVideos() {
     }
     // データ取得ログ出力
     console.log('Supabase videos data:', data);
-    // video_urlをそのままurlへマッピング
-    const mapped = data.map(v => ({ ...v, url: v.video_url }));
+    // 新カラムに合わせてマッピング
+    const mapped = data.map(v => ({
+      id: v.id,
+      title: v.title,
+      actress: v.actress,
+      video_url: v.video_url,
+      poster_url: v.poster_url,
+      thumbnail_url: v.thumbnail_url,
+      affiliate_url: v.affiliate_url,
+      hunted_at: v.hunted_at,
+    }));
     return { error: null, data: mapped };
   } catch (err) {
     console.error("Supabase fetch exception:", err);

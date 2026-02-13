@@ -9,7 +9,13 @@ import { useVideoControl } from "../../hooks/useVideoControl";
 interface VideoData {
   id: string;
   title: string;
-  url: string;
+  actress: string;
+  video_url: string;
+  poster_url: string;
+  thumbnail_url: string;
+  affiliate_url: string;
+  hunted_at: string;
+  url: string; // 既存互換
 }
 
 interface VideoSwiperProps {
@@ -121,6 +127,8 @@ function VideoSlide({ video, index }: { video: VideoData; index: number }) {
       style={{ width: '100%', height: '100%', overflow: 'hidden', boxSizing: 'border-box', display: 'block' }}
     >
       <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2 text-center">{video.title}</h2>
+      <div className="text-sm md:text-base text-gray-300 mb-2 text-center">{video.actress}</div>
+      <img src={video.poster_url} alt={video.title + ' poster'} className="mb-2 max-h-48 rounded shadow" />
       {/*
         DMM litevideoページの埋め込み例。
         <iframe src="https://www.dmm.co.jp/litevideo/-/part/=/cid=..." width="100%" height="360" allowFullScreen></iframe>
@@ -128,9 +136,29 @@ function VideoSlide({ video, index }: { video: VideoData; index: number }) {
           ブラウザでエラーやblank表示になる可能性があります。
       */}
       {/* DMM litevideo のURLの場合は <iframe> で埋め込み、それ以外は <a> でリンク表示 */}
-      {video.url.includes('dmm.co.jp/litevideo') ? (
+      {video.video_url.endsWith('.mp4') ? (
+        <video
+          src={video.video_url}
+          controls
+          autoPlay
+          muted
+          playsInline
+          ref={videoRef}
+          onLoadedMetadata={handleLoadedMetadata}
+          onClick={handleTap}
+          style={{
+            width: '100%',
+            height: '100%',
+            maxWidth: '100vw',
+            maxHeight: '100vh',
+            objectFit: 'contain',
+            background: '#000',
+            display: 'block',
+          }}
+        />
+      ) : (
         <iframe
-          src={video.url}
+          src={video.video_url}
           width="100%"
           height="360"
           allowFullScreen
@@ -145,15 +173,6 @@ function VideoSlide({ video, index }: { video: VideoData; index: number }) {
           }}
           scrolling="no"
         />
-      ) : (
-        <a
-          href={video.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full max-w-lg md:max-w-xl lg:max-w-2xl text-blue-600 underline text-center"
-        >
-          動画を開く（外部リンク）
-        </a>
       )}
     </div>
   );
