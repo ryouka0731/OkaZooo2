@@ -9,7 +9,7 @@ const config = {
   asar: true,
   directories: {
     buildResources: "public",
-    output: "dist",
+    output: "app/renderer",
   },  
   publish: {
     provider: '{{github}}',

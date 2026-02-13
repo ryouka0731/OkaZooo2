@@ -1,4 +1,5 @@
 [build]
 entrypoints = ["src/main.tsx"]
-outdir = "dist"
+outdir = "app/renderer"
 target = "browser"
+postcss = "postcss.config.cjs"
