@@ -30,14 +30,37 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
   console.log('VideoSwiper videos:', videos);
   if (!Array.isArray(videos)) {
     console.warn('videos propsが配列ではありません:', videos);
-  } else {
-    // dmm_contentsスキーマ準拠: video_urlのみ利用
   }
   if (!show) return null;
   // SwiperのactiveIndex管理
   const swiperRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isPc = typeof window !== 'undefined' && window.innerWidth >= 1024;
+
+  // 前のvideo/iframe停止用
+  const prevMediaRefs = useRef<(HTMLVideoElement | HTMLIFrameElement | null)[]>([]);
+
+  // 前のvideo/iframeを停止
+  const pauseAllExcept = (activeIdx: number) => {
+    prevMediaRefs.current.forEach((media, idx) => {
+      if (media) {
+        if (idx !== activeIdx) {
+          if (media instanceof HTMLVideoElement) {
+            media.pause();
+            media.currentTime = 0;
+            media.loop = false;
+          } else if (media instanceof HTMLIFrameElement) {
+            // iframeはsrcを書き換えて停止（YouTube等対応）
+            media.src = '';
+          }
+        } else {
+          if (media instanceof HTMLVideoElement) {
+            media.loop = true;
+          }
+        }
+      }
+    });
+  };
 
   // プリロード用
   useEffect(() => {
@@ -104,6 +127,7 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
         direction="vertical"
         onSwiper={swiper => (swiperRef.current = { swiper })}
         onSlideChange={(swiper) => {
+          pauseAllExcept(swiper.activeIndex);
           // スワイプ時プリロード
           const preloadIndex = swiper.activeIndex + 1;
           const nextVideo = videos[preloadIndex];
@@ -123,7 +147,7 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
           console.log('[VideoSwiper.map] idx:', idx, 'key:', video.id, 'video_url:', video.video_url);
           return (
             <SwiperSlide key={video.id} virtualIndex={idx}>
-              <VideoSlide video={video} index={idx} />
+              <VideoSlide video={video} index={idx} mediaRef={el => (prevMediaRefs.current[idx] = el)} isActive={swiperRef.current?.swiper?.activeIndex === idx} />
             </SwiperSlide>
           );
         })}
@@ -132,7 +156,7 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
   );
 }
 
-function VideoSlide({ video, index }: { video: VideoData; index: number }) {
+function VideoSlide({ video, index, mediaRef, isActive }: { video: VideoData; index: number; mediaRef?: (el: HTMLVideoElement | HTMLIFrameElement | null) => void; isActive?: boolean }) {
   const { videoRef, handleLoadedMetadata, handleTap } = useVideoControl({ videoUrl: video.video_url });
 
   // URL検証関数
@@ -181,13 +205,17 @@ function VideoSlide({ video, index }: { video: VideoData; index: number }) {
             <video
               src={video.video_url}
               crossOrigin="anonymous"
-              controls
-              autoPlay
+              controls={isActive}
+              autoPlay={isActive}
               muted
               playsInline
-              ref={videoRef}
+              ref={el => {
+                videoRef.current = el;
+                if (mediaRef) mediaRef(el);
+              }}
               onLoadedMetadata={handleLoadedMetadata}
               onClick={handleTap}
+              loop={isActive}
               style={{
                 width: '100%',
                 height: '100%',
@@ -200,12 +228,15 @@ function VideoSlide({ video, index }: { video: VideoData; index: number }) {
             />
           ) : (
             <iframe
-              src={video.video_url}
+              src={isActive ? video.video_url : ''}
               width="100%"
               height="360"
               allowFullScreen
               className="w-full max-w-lg md:max-w-xl lg:max-w-2xl rounded shadow-lg video-iframe"
               title={video.title}
+              ref={el => {
+                if (mediaRef) mediaRef(el);
+              }}
               style={{
                 border: 'none',
                 width: '100%',
