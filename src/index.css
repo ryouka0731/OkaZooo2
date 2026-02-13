@@ -5,7 +5,9 @@
 
 /* Glassmorphism & ホットピンクテーマ */
 body {
-  @apply bg-black text-white font-[roboto];
+  background-color: #000;
+  color: #fff;
+  font-family: 'Roboto', sans-serif;
 }
 
 .glass {
@@ -45,6 +47,15 @@ body {
     text-align: center;
     color: #FF69B4;
     cursor: pointer;
-    @apply flex justify-center items-center rounded dark:hover:bg-[#333333aa] hover:bg-[#eaeaea] dark:text-white text-black transition-colors duration-200 ease-in-out glass puni;
+    /* @apply を除去し、直接CSS記述 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.5rem;
+    transition-property: color, background-color;
+    transition-duration: 200ms;
+    transition-timing-function: ease-in-out;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 24px 0 #FF69B4, 0 1.5px 8px 0 #fff2;
   }
 }
