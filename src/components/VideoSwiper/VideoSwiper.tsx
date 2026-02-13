@@ -21,6 +21,17 @@ interface VideoSwiperProps {
 }
 
 export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, show = true, className = '' }: VideoSwiperProps) {
+  // データ構造・値を詳細にログ出力
+  console.log('VideoSwiper videos:', videos);
+  if (!Array.isArray(videos)) {
+    console.warn('videos propsが配列ではありません:', videos);
+  } else {
+    videos.forEach((v, i) => {
+      if (typeof v.url !== 'string') {
+        console.warn(`動画${i}のurl型不一致:`, v);
+      }
+    });
+  }
   if (!show) return null;
   // SwiperのactiveIndex管理
   const swiperRef = useRef<any>(null);
@@ -68,13 +79,17 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
         }
         if (onSlideChange) onSlideChange(swiper.activeIndex);
       }}
-      className={`w-full max-w-lg md:max-w-xl lg:max-w-2xl mx-auto ${className}`}
+      className={`w-full max-w-lg md:max-w-xl lg:max-w-2xl mx-auto video-swiper-wrapper ${className}`}
+      style={{ width: '100%', height: '100%', overflow: 'hidden', display: 'block' }}
     >
-      {videos.map((video, idx) => (
-        <SwiperSlide key={video.id} virtualIndex={idx}>
-          <VideoSlide video={video} index={idx} />
-        </SwiperSlide>
-      ))}
+      {videos.map((video, idx) => {
+        console.log('[VideoSwiper.map] idx:', idx, 'key:', video.id, 'url:', video.url);
+        return (
+          <SwiperSlide key={video.id} virtualIndex={idx}>
+            <VideoSlide video={video} index={idx} />
+          </SwiperSlide>
+        );
+      })}
     </Swiper>
   );
 }
@@ -82,25 +97,64 @@ export default function VideoSwiper({ videos, onSlideChange, slidesPerView = 1, 
 function VideoSlide({ video, index }: { video: VideoData; index: number }) {
   const { videoRef, handleLoadedMetadata, handleTap } = useVideoControl({ videoUrl: video.url });
 
+  // URL検証関数
+  // video_urlはSupabaseから正しい形式で渡される前提
+  function isValidVideoUrl(url: any): boolean {
+    return typeof url === 'string' && url.startsWith('http');
+  }
+
+  // 自動再生抑止: 初回タップ時のみplay()を呼ぶため、useEffectでのplay()呼び出しを削除
   useEffect(() => {
-    if (videoRef.current) {
+    console.log('VideoSlide video:', video);
+    if (!isValidVideoUrl(video.url)) {
+      console.warn(`動画${index}のURLが不正です`, video);
+    }
+    if (videoRef.current && isValidVideoUrl(video.url)) {
       videoRef.current.currentTime = 40;
-      videoRef.current.play();
+      // videoRef.current.play(); // 自動再生抑止のため削除
     }
   }, [video.url]);
 
   return (
-    <div className="flex flex-col items-center p-4 md:p-6 lg:p-8">
+    <div
+      className="flex flex-col items-center p-4 md:p-6 lg:p-8 video-slide-outer"
+      style={{ width: '100%', height: '100%', overflow: 'hidden', boxSizing: 'border-box', display: 'block' }}
+    >
       <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2 text-center">{video.title}</h2>
-      <video
-        ref={videoRef}
-        src={video.url}
-        controls
-        className="w-full max-w-lg md:max-w-xl lg:max-w-2xl rounded shadow-lg"
-        onLoadedMetadata={handleLoadedMetadata}
-        onClick={handleTap}
-        preload="auto"
-      />
+      {/*
+        DMM litevideoページの埋め込み例。
+        <iframe src="https://www.dmm.co.jp/litevideo/-/part/=/cid=..." width="100%" height="360" allowFullScreen></iframe>
+        ※DMM側がX-Frame-OptionsやCSPで埋め込みを禁止している場合、
+          ブラウザでエラーやblank表示になる可能性があります。
+      */}
+      {/* DMM litevideo のURLの場合は <iframe> で埋め込み、それ以外は <a> でリンク表示 */}
+      {video.url.includes('dmm.co.jp/litevideo') ? (
+        <iframe
+          src={video.url}
+          width="100%"
+          height="360"
+          allowFullScreen
+          className="w-full max-w-lg md:max-w-xl lg:max-w-2xl rounded shadow-lg video-iframe"
+          title={video.title}
+          style={{
+            border: 'none',
+            width: '100%',
+            height: 'calc(100vw * 9 / 16)', // 16:9比率でSP/PC両対応
+            overflow: 'hidden',
+            display: 'block',
+          }}
+          scrolling="no"
+        />
+      ) : (
+        <a
+          href={video.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full max-w-lg md:max-w-xl lg:max-w-2xl text-blue-600 underline text-center"
+        >
+          動画を開く（外部リンク）
+        </a>
+      )}
     </div>
   );
 }

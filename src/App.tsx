@@ -18,14 +18,18 @@ function App() {
     getAllVideos()
       .then((result) => {
         console.log('Supabaseレスポンス:', result);
-        if (Array.isArray(result)) {
-          setVideos(result);
-        } else {
+        // データ構造確認ログ
+        if (result && result.data) {
+          console.log('取得videos配列:', result.data);
+          result.data.forEach((v, i) => console.log(`動画${i}:`, v));
           setVideos(result.data);
-          if (result.error) {
-            alert('動画データ取得に失敗しました: ' + result.error);
-            console.error('動画データ取得エラー:', result.error);
-          }
+        } else {
+          console.warn('result.dataが存在しません:', result);
+          setVideos([]);
+        }
+        if (result.error) {
+          alert('動画データ取得に失敗しました: ' + result.error);
+          console.error('動画データ取得エラー:', result.error);
         }
       })
       .catch((err) => {
